@@ -1,0 +1,18 @@
+[configuration]
+
+entry_symbol = "webrtc_extension_init"
+
+[libraries]
+
+linux.x86_64 = "res://{GDNATIVE_PATH}/lib/libgdavif.linux.{TARGET}.x86_64.so"
+linux.x86_32 = "res://{GDNATIVE_PATH}/lib/libgdavif.linux.{TARGET}.x86_32.so"
+osx.x86_64 = "res://{GDNATIVE_PATH}/lib/libgdavif.osx.{TARGET}.x86_64.dylib"
+osx.arm64 = "res://{GDNATIVE_PATH}/lib/libgdavif.osx.{TARGET}.arm64.dylib"
+windows.x86_64 = "res://{GDNATIVE_PATH}/lib/libgdavif.windows.{TARGET}.x86_64.dll"
+windows.x86_32 = "res://{GDNATIVE_PATH}/lib/libgdavif.windows.{TARGET}.x86_32.dll"
+android.arm64 = "res://{GDNATIVE_PATH}/lib/libgdavif.android.{TARGET}.arm64.so"
+android.arm32 = "res://{GDNATIVE_PATH}/lib/libgdavif.android.{TARGET}.arm32.so"
+android.x86_64 = "res://{GDNATIVE_PATH}/lib/libgdavif.android.{TARGET}.x86_64.so"
+android.x86_32 = "res://{GDNATIVE_PATH}/lib/libgdavif.android.{TARGET}.x86_32.so"
+ios.arm64 = "res://{GDNATIVE_PATH}/lib/libgdavif.ios.{TARGET}.arm64.dylib"
+ios.x86_64 = "res://{GDNATIVE_PATH}/lib/libgdavif.ios.{TARGET}.x86_64.simulator.dylib"
