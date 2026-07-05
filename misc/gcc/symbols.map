@@ -1,0 +1,6 @@
+{
+    global:
+        avif_extension_init;
+    local:
+        *;
+};

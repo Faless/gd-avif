@@ -23,10 +23,10 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                   */
 /****************************************************************************/
 
+#include "register_types.h"
+
 #include "image_loader_avif.h"
 #include "resource_saver_avif.h"
-
-#include "register_types.h"
 
 static Ref<ImageLoaderAVIF> loader;
 static Ref<ResourceSaverAVIF> saver;
@@ -71,7 +71,7 @@ void uninitialize_avif_module(ModuleInitializationLevel p_level) {
 using namespace godot;
 
 extern "C" {
-GDExtensionBool GDE_EXPORT avif_extension_init(const GDExtensionInterface *p_interface, const GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization) {
+GDExtensionBool GDE_EXPORT avif_extension_init(const GDExtensionInterfaceGetProcAddress p_interface, const GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization) {
 	GDExtensionBinding::InitObject init_obj(p_interface, p_library, r_initialization);
 
 	init_obj.register_initializer(initialize_avif_module);

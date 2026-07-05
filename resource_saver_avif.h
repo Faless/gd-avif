@@ -23,8 +23,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                   */
 /****************************************************************************/
 
-#ifndef RESOURCE_SAVER_AVIF_H
-#define RESOURCE_SAVER_AVIF_H
+#pragma once
 
 #ifdef GDEXTENSION
 
@@ -40,6 +39,7 @@ using namespace godot;
 #include "core/extension/ext_wrappers.gen.inc"
 #include "core/io/image.h"
 #include "core/io/resource_saver.h"
+#include "core/object/class_db.h"
 #include "core/variant/dictionary.h"
 
 #endif
@@ -94,5 +94,3 @@ public:
 };
 
 VARIANT_ENUM_CAST(ResourceSaverAVIF::PixelFormat);
-
-#endif // RESOURCE_SAVER_AVIF_H

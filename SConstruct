@@ -1,9 +1,7 @@
-#!python
+#!/usr/bin/env python
+# ruff: noqa: F821
 
-import os, sys, platform, json, subprocess
-
-import SCons
-
+import os
 
 # Minimum target platform versions.
 if "ios_min_version" not in ARGUMENTS:
@@ -12,8 +10,13 @@ if "macos_deployment_target" not in ARGUMENTS:
     ARGUMENTS["macos_deployment_target"] = "10.9"
 if "android_api_level" not in ARGUMENTS:
     ARGUMENTS["android_api_level"] = "21"
+if "api_version" not in ARGUMENTS:
+    ARGUMENTS["api_version"] = "4.3"
+if "use_static_cpp" not in ARGUMENTS:
+    ARGUMENTS["use_static_cpp"] = "yes"
 
 env = SConscript("godot-cpp/SConstruct").Clone()
+env.__class__.msvc = env.get("is_msvc", False)
 
 opts = Variables([], ARGUMENTS)
 
@@ -36,6 +39,19 @@ sources = [
 # Make our dependencies
 aom = env.BuildAOM()
 avif = env.BuildLibAvif(aom)
+
+env.Depends(sources, [aom, avif])
+
+# We want to statically link against libstdc++ on Linux to maximize compatibility, but we must restrict the exported
+# symbols using a GCC version script, or we might end up overriding symbols from other libraries.
+# Using "-fvisibility=hidden" will not work, since libstdc++ explicitly exports its symbols.
+symbols_file = None
+if not env.get("use_llvm", False) and (
+    env["platform"] == "linux" or (env["platform"] == "windows" and env.get("use_mingw", False))
+):
+    symbols_file = env.File("misc/gcc/symbols.map")
+    env.Append(LINKFLAGS=["-Wl,--no-undefined,--version-script=" + symbols_file.abspath])
+    env.Depends(sources, symbols_file)
 
 # Make the shared library
 result_name = "gdavif{}{}".format(env["suffix"], env["SHLIBSUFFIX"])

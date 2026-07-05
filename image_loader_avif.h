@@ -23,8 +23,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                   */
 /****************************************************************************/
 
-#ifndef IMAGE_LOADER_AVIF_H
-#define IMAGE_LOADER_AVIF_H
+#pragma once
 
 #ifdef GDEXTENSION
 
@@ -40,6 +39,7 @@ using namespace godot;
 #include "core/io/file_access.h"
 #include "core/io/image.h"
 #include "core/io/image_loader.h"
+#include "core/object/class_db.h"
 
 #endif
 
@@ -56,7 +56,7 @@ protected:
 
 public:
 #ifdef GDEXTENSION
-	virtual Error _load_image(const Ref<Image> &p_image, const Ref<FileAccess> &p_file, BitField<ImageFormatLoader::LoaderFlags> p_flags, double p_scale) override;
+	virtual Error _load_image(const Ref<Image> &p_image, const Ref<FileAccess> &p_file, BitField<ImageFormatLoader::LoaderFlags> p_flags, float p_scale) override;
 	virtual PackedStringArray _get_recognized_extensions() const override;
 #else
 	virtual Error load_image(Ref<Image> p_image, Ref<FileAccess> p_file, BitField<ImageFormatLoader::LoaderFlags> p_flags, float p_scale) override;
@@ -67,5 +67,3 @@ public:
 
 	ImageLoaderAVIF();
 };
-
-#endif
