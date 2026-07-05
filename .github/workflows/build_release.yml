@@ -98,7 +98,7 @@ jobs:
 
     env:
       SCONS_CACHE: ${{ github.workspace }}/.scons-cache/
-      SCONSFLAGS: build_profile=build_profile.json platform=${{ matrix.platform }} arch=${{ matrix.arch }}
+      SCONSFLAGS: verbose=yes build_profile=build_profile.json platform=${{ matrix.platform }} arch=${{ matrix.arch }}
 
     defaults:
       run:
