@@ -1,4 +1,5 @@
 #!python
+# ruff: noqa: F821
 
 Import("env")
 Import("env_modules")
@@ -25,7 +26,10 @@ module_obj = []
 env_avif.add_source_files(module_obj, "*.cpp")
 
 env.modules_sources += module_obj
-env.Append(LIBS=env_avif["AVIF_LIBS"] + env_avif["AOM_LIBS"])
 
 # Needed to force rebuilding the module files when the thirdparty library is updated.
 env.Depends(module_obj, aom + avif)
+
+# Add libs to godot binary linkflags
+lib_ext = ".lib" if env.msvc else ".a"
+env.Append(LIBS=list(filter(lambda f: str(f).endswith(lib_ext), avif + aom)))

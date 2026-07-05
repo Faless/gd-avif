@@ -11,14 +11,15 @@ def aom_cmake_config(env):
         "ENABLE_TESTS": "0",
         "ENABLE_TOOLS": "0",
         "CMAKE_POSITION_INDEPENDENT_CODE": "1",
+        "CMAKE_INSTALL_LIBDIR": "lib",
+        "CMAKE_INSTALL_PREFIX": env.Dir(env["AOM_INSTALL"]).abspath,
     }
     config["AOM_TARGET_CPU"] = {"x86_64": "x86_64", "x86_32": "x86", "arm64": "aarch64", "arm32": "arm"}[env["arch"]]
     return config
 
 
-def build_library(env, jobs=None):
-    if jobs is None:
-        jobs = int(env.GetOption("num_jobs"))
+def build_library(env):
+    lib_ext = ".lib" if env.msvc else ".a"
 
     # Since AOM does not support macOS universal binaries, we first need to build the two libraries
     # separately, then we join them together using lipo.
@@ -32,44 +33,37 @@ def build_library(env, jobs=None):
             benv = build_envs[arch]
             benv["arch"] = arch
             generate(benv)
-            benv["CMAKEBUILDJOBS"] = max([1, int(jobs / len(build_envs))])
-            aom = benv.CMake(
-                [benv.Dir("${AOM_BUILD}")] + benv["AOM_LIBS"],
-                benv.Dir("${AOM_SOURCE}"),
-                CMAKECONFFLAGS=["-D%s=%s" % it for it in aom_cmake_config(benv).items()],
+            aom = benv.CMakeBuild(
+                env.Dir(benv["AOM_BUILD"]),
+                env.Dir(benv["AOM_SOURCE"]),
+                cmake_options=aom_cmake_config(benv),
+                cmake_outputs=benv["AOM_LIBS"],
             )
             arch_aom.extend(aom)
-            benv.NoCache(aom)  # Needs refactoring to properly cache generated headers.
 
-        aom = []
-        common = ["libaom_version.a", "libaom_pc.a", "libaom.a"]
-        x64_libs = filter(lambda lib: not any([str(lib).endswith(c) for c in common]), build_envs["x86_64"]["AOM_LIBS"])
         # Join libraries using lipo.
+        os.makedirs(env["AOM_INSTALL"] + "/lib", exist_ok=True)
         lipo_action = "lipo $SOURCES -create -output $TARGET"
-
-        # First the x86-only libraries ("fake" fat libraries).
-        for lib in x64_libs:
-            aom += env.Command(env.File("${AOM_BUILD}/" + os.path.basename(str(lib))), lib, lipo_action)
-
-        # Then the actual fat ones.
-        for lib in common:
-            aom += env.Command(
-                env.File("${AOM_BUILD}/" + lib),
-                [benv.File("${AOM_BUILD}/" + lib) for benv in build_envs.values()],
-                lipo_action,
-            )
+        aom = env.Command(
+            env.File("${AOM_INSTALL}/lib/libaom.a"),
+            list(filter(lambda f: str(f).endswith(lib_ext), arch_aom)),
+            lipo_action,
+        )
         env.Depends(aom, arch_aom)
 
     else:
-        aom = env.CMake(
-            [env.Dir("${AOM_BUILD}")] + env["AOM_LIBS"],
-            env.Dir("${AOM_SOURCE}"),
-            CMAKECONFFLAGS=["-D%s=%s" % it for it in aom_cmake_config(env).items()],
+        aom = env.CMakeBuild(
+            env.Dir(env["AOM_BUILD"]),
+            env.Dir(env["AOM_SOURCE"]),
+            cmake_options=aom_cmake_config(env),
+            cmake_outputs=env["AOM_LIBS"],
+            install=True,
         )
 
-    env.Append(LIBPATH=[env["AOM_BUILD"]])
     env.Append(CPPPATH=[env["AOM_INCLUDE"]])
-    env.Prepend(LIBS=env["AOM_LIBS"])
+    env.Prepend(LIBS=list(filter(lambda f: str(f).endswith(lib_ext), aom)))
+    if env["platform"] == "linux":
+        env.Prepend(LIBS=["pthread"])
 
     return aom
 
@@ -79,27 +73,9 @@ def exists(env):
 
 
 def generate(env):
+    env["AOM_INSTALL"] = env.Dir("#bin/thirdparty/aom/${platform}/${arch}/install").abspath
     env["AOM_BUILD"] = env.Dir("#bin/thirdparty/aom/${platform}/${arch}").abspath
     env["AOM_SOURCE"] = env.Dir("thirdparty/aom").abspath
     env["AOM_INCLUDE"] = env["AOM_SOURCE"]
-    libs = []
-    if env["arch"] == "x86_64" or (env["platform"] == "macos" and env["arch"] == "universal"):
-        libs += [
-            "libaom_av1_encoder_sse2_static.a",
-            "libaom_av1_encoder_ssse3_static.a",
-            "libaom_dsp_common_sse2_static.a",
-            "libaom_dsp_common_ssse3_static.a",
-            "libaom_dsp_encoder_sse2_static.a",
-            "libaom_dsp_encoder_ssse3_static.a",
-        ]
-    elif env["arch"] == "x86_32":
-        libs += [
-            "libaom_av1_encoder_sse2_static.a",
-            "libaom_dsp_common_sse2_static.a",
-            "libaom_dsp_common_ssse3_static.a",
-            "libaom_dsp_encoder_sse2_static.a",
-        ]
-    libs = ["libaom_version.a", "libaom_pc.a"] + libs + ["libaom.a"]
-
-    env["AOM_LIBS"] = [env.File("${AOM_BUILD}/" + lib) for lib in libs]
+    env["AOM_LIBS"] = ["libaom.a"]
     env.AddMethod(build_library, "BuildAOM")

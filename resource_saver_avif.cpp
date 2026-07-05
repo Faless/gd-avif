@@ -45,8 +45,8 @@
 
 ResourceSaverAVIF *ResourceSaverAVIF::singleton = nullptr;
 
-#define SET_VAL(p_key)                       \
-	if (p_config.has(#p_key)) {              \
+#define SET_VAL(p_key) \
+	if (p_config.has(#p_key)) { \
 		p_encoder->p_key = p_config[#p_key]; \
 	}
 void ResourceSaverAVIF::_configure_encoder(avifEncoder *p_encoder, const Dictionary &p_config) {

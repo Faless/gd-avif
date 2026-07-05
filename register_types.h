@@ -23,8 +23,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                   */
 /****************************************************************************/
 
-#ifndef AVIF_REGISTER_TYPES_H
-#define AVIF_REGISTER_TYPES_H
+#pragma once
 
 #ifdef GDEXTENSION
 #include <godot_cpp/classes/resource_saver.hpp>
@@ -36,5 +35,3 @@ using namespace godot;
 
 void initialize_avif_module(ModuleInitializationLevel p_level);
 void uninitialize_avif_module(ModuleInitializationLevel p_level);
-
-#endif // AVIF_REGISTER_TYPES_H

@@ -68,7 +68,7 @@ Ref<Image> ImageLoaderAVIF::load_avif_from_buffer(PackedByteArray p_buffer) {
 }
 
 #ifdef GDEXTENSION
-Error ImageLoaderAVIF::_load_image(const Ref<Image> &p_image, const Ref<FileAccess> &p_file, BitField<ImageFormatLoader::LoaderFlags> p_flags, double p_scale) {
+Error ImageLoaderAVIF::_load_image(const Ref<Image> &p_image, const Ref<FileAccess> &p_file, BitField<ImageFormatLoader::LoaderFlags> p_flags, float p_scale) {
 #else
 Error ImageLoaderAVIF::load_image(Ref<Image> p_image, Ref<FileAccess> p_file, BitField<ImageFormatLoader::LoaderFlags> p_flags, float p_scale) {
 #endif

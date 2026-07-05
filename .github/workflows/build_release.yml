@@ -4,6 +4,7 @@ on: [push, pull_request]
 env:
   # Only used for the cache key. Increment version to force clean build.
   GODOT_BASE_BRANCH: master
+  ANDROID_NDK_ROOT: /usr/local/lib/android/sdk/ndk/28.1.13356709/
 
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}
@@ -12,34 +13,24 @@ concurrency:
 jobs:
   static-checks:
     name: 📊 Static Checks (clang-format, black format, file format)
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # Treeless clone. Slightly less performant than a shallow clone, but makes finding diffs instantaneous.
+          filter: tree:0 # See: https://github.blog/open-source/git/get-up-to-speed-with-partial-clone-and-shallow-clone/
 
-      - name: Install dependencies
+      # This needs to happen before Python and npm execution; it must happen before any extra files are written.
+      - name: .gitignore checks (gitignore_check.sh)
         run: |
-          # Add clang repository (so we have clang-format-14)
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main"
-          sudo apt-get update
-          # Install required deps
-          sudo apt-get install -qq dos2unix moreutils recode clang-format-14
-          sudo update-alternatives --remove-all clang-format
-          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-14 100
-          sudo pip3 install black==22.3.0 pygments
+          bash ./misc/scripts/gitignore_check.sh
 
-      - name: File formatting checks (file_format.sh)
-        run: |
-          bash ./misc/scripts/file_format.sh
-
-      - name: Style checks via clang-format (clang_format.sh)
-        run: |
-          bash ./misc/scripts/clang_format.sh
-
-      - name: Python style checks via black (black_format.sh)
-        run: |
-          bash ./misc/scripts/black_format.sh
+      - name: Style checks via prek
+        uses: j178/prek-action@v2
+        with:
+          extra-args: "-a"
 
   build:
     runs-on: ${{ matrix.os }}
@@ -52,62 +43,74 @@ jobs:
           # Android
           - platform: android
             arch: 'x86_64'
-            sconsflags: 'ANDROID_NDK_ROOT=$ANDROID_NDK_LATEST_HOME'
-            os: 'ubuntu-20.04'
+            sconsflags: ''
+            os: 'ubuntu-22.04'
           - platform: android
             arch: 'arm64'
-            sconsflags: 'ANDROID_NDK_ROOT=$ANDROID_NDK_LATEST_HOME'
-            os: 'ubuntu-20.04'
+            sconsflags: ''
+            os: 'ubuntu-22.04'
 
           # iOS
           - platform: ios
             arch: 'arm64'
             sconsflags: ''
-            os: 'macos-11'
+            os: 'macos-latest'
 
           # Linux
           - platform: linux
             arch: 'x86_32'
             sconsflags: ''
-            os: 'ubuntu-20.04'
+            os: 'ubuntu-22.04'
+            buildroot: 'i686-godot-linux-gnu_sdk-buildroot'
           - platform: linux
             arch: 'x86_64'
             sconsflags: ''
-            os: 'ubuntu-20.04'
+            os: 'ubuntu-22.04'
+            buildroot: 'x86_64-godot-linux-gnu_sdk-buildroot'
+          - platform: linux
+            arch: 'arm32'
+            sconsflags: ''
+            os: 'ubuntu-22.04'
+            buildroot: 'arm-godot-linux-gnueabihf_sdk-buildroot'
+          - platform: linux
+            arch: 'arm64'
+            sconsflags: ''
+            os: 'ubuntu-22.04'
+            buildroot: 'aarch64-godot-linux-gnu_sdk-buildroot'
 
           # macOS
           - platform: macos
             arch: 'universal'
             sconsflags: ''
-            os: 'macos-11'
+            os: 'macos-latest'
 
           # Windows
           - platform: windows
             arch: 'x86_32'
             sconsflags: 'use_mingw=yes'
-            os: 'ubuntu-20.04'
+            os: 'ubuntu-22.04'
             msvc_arch: amd64_x86
           - platform: windows
             arch: 'x86_64'
             sconsflags: 'use_mingw=yes'
-            os: 'ubuntu-20.04'
+            os: 'ubuntu-22.04'
             msvc_arch: amd64
 
     env:
       SCONS_CACHE: ${{ github.workspace }}/.scons-cache/
-      SCONSFLAGS: platform=${{ matrix.platform }} arch=${{ matrix.arch }}
+      SCONSFLAGS: build_profile=build_profile.json platform=${{ matrix.platform }} arch=${{ matrix.arch }}
 
     defaults:
       run:
         shell: bash
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
-      - name: Setup Godot build cache
-        uses: ./godot-cpp/.github/actions/godot-cache
+      - name: Restore Godot build cache
+        uses: ./.github/actions/godot-cache-restore
         with:
           cache-name: ${{ matrix.platform }}-${{ matrix.arch }}
         continue-on-error: true
@@ -129,6 +132,33 @@ jobs:
         run: |
           sudo apt-get install build-essential gcc-multilib g++-multilib yasm
 
+      - name: Setup Linux buildroot toolchain cache
+        if: ${{ matrix.platform == 'linux' }}
+        uses: actions/cache@v5
+        with:
+          path: |
+            ${{ matrix.buildroot }}.tar.bz2
+          key: linux-${{ matrix.buildroot }}-buildroot
+
+      - name: Setup Linux toolchains
+        if: ${{ matrix.platform == 'linux' }}
+        run: |
+          if [ ! -f ${{ matrix.buildroot }}.tar.bz2 ]; then
+            wget https://github.com/godotengine/buildroot/releases/download/godot-2023.08.x-4/${{ matrix.buildroot }}.tar.bz2
+          fi
+          tar -xjf ${{ matrix.buildroot }}.tar.bz2
+          ${{ matrix.buildroot }}/relocate-sdk.sh
+          rm ${{ matrix.buildroot }}/bin/cmake
+          echo "$GITHUB_WORKSPACE/${{ matrix.buildroot }}/bin" >> $GITHUB_PATH
+          echo "PKG_CONFIG=$GITHUB_WORKSPACE/${{ matrix.buildroot }}/share/pkgconfig/" >> $GITHUB_ENV
+
+      - name: Setup Android NDK
+        if: ${{ matrix.platform  == 'android' }}
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r28b
+          link-to-sdk: true
+
       - name: Install Android build dependencies
         if: ${{ matrix.platform == 'android' }}
         run: |
@@ -140,7 +170,7 @@ jobs:
           brew install yasm
 
       - name: Set up Python 3.x
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.x'
           architecture: 'x64'
@@ -161,7 +191,13 @@ jobs:
         run: |
           scons target=template_release ${{ matrix.sconsflags }}
 
-      - uses: actions/upload-artifact@v3
+      - name: Save Godot build cache
+        uses: ./.github/actions/godot-cache-save
+        with:
+          cache-name: ${{ matrix.platform }}-${{ matrix.arch }}
+        continue-on-error: true
+
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ github.job }}-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
@@ -173,11 +209,11 @@ jobs:
     needs: build
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
 
@@ -204,7 +240,7 @@ jobs:
 
           ls -R
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v7
         with:
           name: godot-avif-extension
           path: release/*.zip

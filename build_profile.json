@@ -1,0 +1,12 @@
+{
+	"enabled_classes": [
+		"OS",
+		"ImageLoader",
+		"ImageFormatLoader",
+		"ImageFormatLoaderExtension",
+		"ImageTexture",
+		"ResourceSaver",
+		"ResourceFormatSaver",
+		"ResourceFormatSaverExtension"
+	]
+}
