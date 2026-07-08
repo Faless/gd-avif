@@ -2,6 +2,7 @@ def avif_cmake_config(env):
     config = {
         "BUILD_SHARED_LIBS": "0",
         "AVIF_CODEC_AOM": "1",
+        "AVIF_LIBYUV": "LOCAL",
         "AOM_LIBRARY": env["AOM_INSTALL"] + "/libaom.a",
         "AOM_INCLUDE_DIR": env["AOM_INCLUDE"],
         "CMAKE_POSITION_INDEPENDENT_CODE": "1",
