@@ -13,6 +13,7 @@ def avif_cmake_config(env, aom, yuv):
         "CMAKE_POSITION_INDEPENDENT_CODE": "1",
         "CMAKE_BUILD_TYPE": "%s" % ("RelWithDebInfo" if env["debug_symbols"] else "Release"),
     }
+    config["CMAKE_CROSSCOMPILING"] = "1"  # Force "cross compiling" so cmake does not override CMAKE_SYSTEM_PROCESSOR
     return config
 
 

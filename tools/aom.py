@@ -12,6 +12,7 @@ def aom_cmake_config(env):
         "CMAKE_INSTALL_LIBDIR": "lib",
         "CMAKE_INSTALL_PREFIX": bindir.abspath,
     }
+    config["CMAKE_CROSSCOMPILING"] = "1"  # Force "cross compiling" so cmake does not override CMAKE_SYSTEM_PROCESSOR
     config["AOM_TARGET_CPU"] = {"x86_64": "x86_64", "x86_32": "x86", "arm64": "aarch64", "arm32": "arm"}[env["arch"]]
     return config
 
