@@ -13,8 +13,6 @@ if "ios_min_version" not in env_avif:
     env_avif["ios_min_version"] = "11.0"
 if "macos_deployment_target" not in env_avif:
     env_avif["macos_deployment_target"] = "11.0"
-if "android_api_level" not in env_avif:
-    env_avif["android_api_level"] = "21"
 
 # Dependencies
 for tool in ["cmake", "aom", "yuv", "avif"]:
