@@ -36,7 +36,7 @@ if env["platform"] == "macos" and env["arch"] == "universal":
         arch_avif.extend(benv.BuildLibAvif(arch_aom, arch_yuv))
 
     # Join libraries using lipo.
-    for targets in [arch_aom, arch_avif, arch_yuv]:
+    for targets in [arch_aom, arch_yuv, arch_avif]:
         libs = list(filter(lambda f: str(f).endswith(".a"), targets))
         path = "#bin/thirdparty/lipo"
         os.makedirs(env_avif.Dir(path).abspath, exist_ok=True)
@@ -57,7 +57,9 @@ else:
     aom = env_avif.BuildAOM()
     yuv = env_avif.BuildLibYUV()
     avif = env_avif.BuildLibAvif(aom, yuv)
-    deps = aom + avif + yuv
+    deps = aom + yuv + avif
+
+deps.reverse()
 
 module_obj = []
 env_avif.add_source_files(module_obj, "*.cpp")

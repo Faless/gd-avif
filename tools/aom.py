@@ -28,7 +28,7 @@ def build_library(env):
     )
     env.Append(CPPPATH=[env["AOM_INCLUDE"]])
     env.Prepend(LIBS=list(filter(lambda f: str(f).endswith(lib_ext), aom)))
-    if env["platform"] == "linux":
+    if env["platform"] == "linux" and env.get("threads", True):
         env.PrependUnique(LIBS=["pthread"])
 
     return aom
