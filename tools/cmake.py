@@ -63,10 +63,12 @@ def cmake_default_flags(env):
             config["CMAKE_CXX_FLAGS"] = linux_flags
 
     elif env["platform"] == "macos":
+        config["CMAKE_SYSTEM_NAME"] = "Darwin"
         if env["arch"] == "universal":
             config["CMAKE_OSX_ARCHITECTURES"] = '"x86_64;arm64"'
         else:
             config["CMAKE_OSX_ARCHITECTURES"] = env["arch"]
+            config["CMAKE_SYSTEM_PROCESSOR"] = env["arch"]
         if env.get("macos_deployment_target", "default") != "default":
             config["CMAKE_OSX_DEPLOYMENT_TARGET"] = env["macos_deployment_target"]
         if sys.platform != "darwin" and "OSXCROSS_ROOT" in os.environ:
@@ -85,6 +87,7 @@ def cmake_default_flags(env):
         if env["arch"] == "universal":
             raise ValueError("iOS architecture not supported: %s" % env["arch"])
         config["CMAKE_SYSTEM_NAME"] = "iOS"
+        config["CMAKE_SYSTEM_PROCESSOR"] = env["arch"]
         config["CMAKE_OSX_ARCHITECTURES"] = env["arch"]
         if env.get("ios_min_version", "default") != "default":
             config["CMAKE_OSX_DEPLOYMENT_TARGET"] = env["ios_min_version"]
@@ -93,6 +96,7 @@ def cmake_default_flags(env):
 
     elif env["platform"] == "windows":
         config["CMAKE_SYSTEM_NAME"] = "Windows"
+        config["CMAKE_SYSTEM_PROCESSOR"] = env["arch"]
         if env.msvc:
             config["CMAKE_POLICY_DEFAULT_CMP0091"] = "NEW"
             if env.get("debug_crt", False):
