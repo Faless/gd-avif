@@ -1,6 +1,7 @@
 def cmake_config(env):
     config = {
         "CMAKE_POSITION_INDEPENDENT_CODE": "1",
+        "CMAKE_DISABLE_FIND_PACKAGE_JPEG": "1",
         "CMAKE_BUILD_TYPE": "%s" % ("RelWithDebInfo" if env["debug_symbols"] else "Release"),
     }
     config["CMAKE_CROSSCOMPILING"] = "1"  # Force "cross compiling" so cmake does not override CMAKE_SYSTEM_PROCESSOR
