@@ -37,12 +37,49 @@ sources = [
     "resource_saver_avif.cpp",
 ]
 
-# Make our dependencies
-aom = env.BuildAOM()
-yuv = env.BuildLibYUV()
-avif = env.BuildLibAvif(aom, yuv)
+deps = []
+# For universal binaries, we first need to build the libraries separately,
+# then join them together using lipo.
+if env["platform"] == "macos" and env["arch"] == "universal":
+    build_envs = {
+        "x86_64": env.Clone(),
+        "arm64": env.Clone(),
+    }
+    arch_aom = []
+    arch_avif = []
+    arch_yuv = []
+    for arch in build_envs:
+        benv = build_envs[arch]
+        benv["arch"] = arch
+        arch_aom.extend(benv.BuildAOM())
+        arch_yuv.extend(benv.BuildLibYUV())
+        arch_avif.extend(benv.BuildLibAvif(arch_aom, arch_yuv))
 
-env.Depends(sources, aom + avif + yuv)
+    # Join libraries using lipo.
+    for targets in [arch_aom, arch_avif, arch_yuv]:
+        libs = list(filter(lambda f: str(f).endswith(".a"), targets))
+        path = "#bin/thirdparty/lipo"
+        os.makedirs(env.Dir(path).abspath, exist_ok=True)
+        lipo_action = "lipo $SOURCES -create -output $TARGET"
+        lib = env.Command(
+            env.File("{}/{}".format(path, os.path.basename(libs[0].abspath))),
+            libs,
+            lipo_action,
+        )
+        env.Depends(lib, libs)
+        env.Append(LIBS=lib)
+        deps.extend(lib)
+    env.Append(CPPPATH=[env["AOM_INCLUDE"]])
+    env.Append(CPPPATH=[env["YUV_INCLUDE"]])
+    env.Append(CPPPATH=[env["AVIF_INCLUDE"]])
+else:
+    # Make our dependencies
+    aom = env.BuildAOM()
+    yuv = env.BuildLibYUV()
+    avif = env.BuildLibAvif(aom, yuv)
+    deps = aom + avif + yuv
+
+env.Depends(sources, deps)
 
 # We want to statically link against libstdc++ on Linux to maximize compatibility, but we must restrict the exported
 # symbols using a GCC version script, or we might end up overriding symbols from other libraries.
