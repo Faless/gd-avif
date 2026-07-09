@@ -65,7 +65,6 @@ void ResourceSaverAVIF::_configure_encoder(avifEncoder *p_encoder, const Diction
 
 Error ResourceSaverAVIF::_avif_save_image_to_buffer(const Ref<Image> p_img, avifEncoder *p_encoder, avifRWData *r_output, ResourceSaverAVIF::PixelFormat p_format) {
 	ERR_FAIL_COND_V(p_img.is_null(), ERR_INVALID_PARAMETER);
-	PackedByteArray out;
 	Ref<Image> source_image = p_img->duplicate();
 	if (source_image->is_compressed()) {
 		source_image->decompress();
