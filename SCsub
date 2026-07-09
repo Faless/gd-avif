@@ -15,12 +15,49 @@ if "android_api_level" not in env_avif:
     env_avif["android_api_level"] = "21"
 
 # Dependencies
-for tool in ["cmake", "aom", "avif"]:
+for tool in ["cmake", "aom", "yuv", "avif"]:
     env_avif.Tool(tool, toolpath=["tools"])
 
-# Make our dependencies
-aom = env_avif.BuildAOM()
-avif = env_avif.BuildLibAvif(aom)
+# For universal binaries, we first need to build the libraries separately,
+# then join them together using lipo.
+if env["platform"] == "macos" and env["arch"] == "universal":
+    build_envs = {
+        "x86_64": env_avif.Clone(),
+        "arm64": env_avif.Clone(),
+    }
+    arch_aom = []
+    arch_avif = []
+    arch_yuv = []
+    for arch in build_envs:
+        benv = build_envs[arch]
+        benv["arch"] = arch
+        arch_aom.extend(benv.BuildAOM())
+        arch_yuv.extend(benv.BuildLibYUV())
+        arch_avif.extend(benv.BuildLibAvif(arch_aom, arch_yuv))
+
+    # Join libraries using lipo.
+    for targets in [arch_aom, arch_avif, arch_yuv]:
+        libs = list(filter(lambda f: str(f).endswith(".a"), targets))
+        path = "#bin/thirdparty/lipo"
+        os.makedirs(env_avif.Dir(path).abspath, exist_ok=True)
+        lipo_action = "lipo $SOURCES -create -output $TARGET"
+        lib = env.Command(
+            env_avif.File("{}/{}".format(path, os.path.basename(libs[0].abspath))),
+            libs,
+            lipo_action,
+        )
+        env_avif.Depends(lib, libs)
+        env_avif.Append(LIBS=lib)
+        deps.extend(lib)
+    env_avif.Append(CPPPATH=[env["AOM_INCLUDE"]])
+    env_avif.Append(CPPPATH=[env["YUV_INCLUDE"]])
+    env_avif.Append(CPPPATH=[env["AVIF_INCLUDE"]])
+else:
+    # Make our dependencies
+    aom = env_avif.BuildAOM()
+    yuv = env_avif.BuildLibYUV()
+    avif = env_avif.BuildLibAvif(aom, yuv)
+    deps = aom + avif + yuv
 
 module_obj = []
 env_avif.add_source_files(module_obj, "*.cpp")
@@ -28,8 +65,8 @@ env_avif.add_source_files(module_obj, "*.cpp")
 env.modules_sources += module_obj
 
 # Needed to force rebuilding the module files when the thirdparty library is updated.
-env.Depends(module_obj, aom + avif)
+env.Depends(module_obj, deps)
 
 # Add libs to godot binary linkflags
 lib_ext = ".lib" if env.msvc else ".a"
-env.Append(LIBS=list(filter(lambda f: str(f).endswith(lib_ext), avif + aom)))
+env.Append(LIBS=list(filter(lambda f: str(f).endswith(lib_ext), deps)))
