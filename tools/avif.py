@@ -5,6 +5,7 @@ def avif_cmake_config(env, aom, yuv):
         "AVIF_CODEC_AOM_DECODE": "ON",
         "AVIF_CODEC_AOM_ENCODE": "ON",
         "AVIF_LIBYUV": "SYSTEM",
+        "AVIF_JPEG": "OFF",
         "AOM_LIBRARY": aom[0].abspath,
         "AOM_INCLUDE_DIR": env["AOM_INCLUDE"],
         "LIBYUV_LIBRARY": yuv[0].abspath,
