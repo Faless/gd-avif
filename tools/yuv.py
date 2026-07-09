@@ -4,6 +4,8 @@ def cmake_config(env):
         "CMAKE_BUILD_TYPE": "%s" % ("RelWithDebInfo" if env["debug_symbols"] else "Release"),
     }
     config["CMAKE_CROSSCOMPILING"] = "1"  # Force "cross compiling" so cmake does not override CMAKE_SYSTEM_PROCESSOR
+    if env["platform"] == "linux" and env["arch"] == "x86_32":
+        config["CMAKE_C_FLAGS"] = "-mmmx -msse4"
     return config
 
 
