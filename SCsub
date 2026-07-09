@@ -1,6 +1,8 @@
 #!python
 # ruff: noqa: F821
 
+import os
+
 Import("env")
 Import("env_modules")
 
@@ -18,6 +20,7 @@ if "android_api_level" not in env_avif:
 for tool in ["cmake", "aom", "yuv", "avif"]:
     env_avif.Tool(tool, toolpath=["tools"])
 
+deps = []
 # For universal binaries, we first need to build the libraries separately,
 # then join them together using lipo.
 if env["platform"] == "macos" and env["arch"] == "universal":
@@ -49,9 +52,9 @@ if env["platform"] == "macos" and env["arch"] == "universal":
         env_avif.Depends(lib, libs)
         env_avif.Append(LIBS=lib)
         deps.extend(lib)
-    env_avif.Append(CPPPATH=[env["AOM_INCLUDE"]])
-    env_avif.Append(CPPPATH=[env["YUV_INCLUDE"]])
-    env_avif.Append(CPPPATH=[env["AVIF_INCLUDE"]])
+    env_avif.Append(CPPPATH=[env_avif["AOM_INCLUDE"]])
+    env_avif.Append(CPPPATH=[env_avif["YUV_INCLUDE"]])
+    env_avif.Append(CPPPATH=[env_avif["AVIF_INCLUDE"]])
 else:
     # Make our dependencies
     aom = env_avif.BuildAOM()
