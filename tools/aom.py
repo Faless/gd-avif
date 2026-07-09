@@ -74,7 +74,7 @@ def exists(env):
 
 def generate(env):
     env["AOM_INSTALL"] = env.Dir("#bin/thirdparty/aom/${platform}/${arch}/install").abspath
-    env["AOM_BUILD"] = env.Dir("#bin/thirdparty/aom/${platform}/${arch}").abspath
+    env["AOM_BUILD"] = env.Dir("#bin/thirdparty/aom").abspath
     env["AOM_SOURCE"] = env.Dir("thirdparty/aom").abspath
     env["AOM_INCLUDE"] = env["AOM_SOURCE"]
     env["AOM_LIBS"] = ["libaom.a"]

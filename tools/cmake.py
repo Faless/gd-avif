@@ -50,6 +50,8 @@ def cmake_default_flags(env):
         config["CMAKE_ANDROID_STL_TYPE"] = "c++_static"
 
     elif env["platform"] == "linux":
+        config["CMAKE_SYSTEM_NAME"] = "Linux"
+        config["CMAKE_SYSTEM_PROCESSOR"] = env["arch"]
         linux_flags = {
             "x86_64": "-m64",
             "x86_32": "-m32",

@@ -7,3 +7,6 @@
 [submodule "thirdparty/aom"]
 	path = thirdparty/aom
 	url = https://aomedia.googlesource.com/aom
+[submodule "thirdparty/libyuv"]
+	path = thirdparty/libyuv
+	url = https://chromium.googlesource.com/libyuv/libyuv

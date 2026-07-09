@@ -18,10 +18,11 @@ if "use_static_cpp" not in ARGUMENTS:
 env = SConscript("godot-cpp/SConstruct").Clone()
 env.__class__.msvc = env.get("is_msvc", False)
 
+
 opts = Variables([], ARGUMENTS)
 
 # Dependencies
-for tool in ["cmake", "aom", "avif"]:
+for tool in ["cmake", "aom", "yuv", "avif"]:
     env.Tool(tool, toolpath=["tools"])
 
 opts.Update(env)
@@ -38,9 +39,10 @@ sources = [
 
 # Make our dependencies
 aom = env.BuildAOM()
-avif = env.BuildLibAvif(aom)
+yuv = env.BuildLibYUV()
+avif = env.BuildLibAvif(aom, yuv)
 
-env.Depends(sources, [aom, avif])
+env.Depends(sources, aom + avif + yuv)
 
 # We want to statically link against libstdc++ on Linux to maximize compatibility, but we must restrict the exported
 # symbols using a GCC version script, or we might end up overriding symbols from other libraries.
